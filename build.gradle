@@ -1,0 +1,105 @@
+plugins {
+	id 'java'
+	id 'java-library'
+	id 'maven-publish'
+	id "net.linguica.maven-settings" version "0.5"
+}
+
+apply plugin: 'java'
+apply plugin: 'java-library'
+
+
+group = 'com.techandsolve.performanceaas'
+version = '0.0.1-SNAPSHOT'
+
+sourceCompatibility = 1.11
+
+ext.getCurrentBranchName = {
+	return  findProperty("branch") == null ? "development" : findProperty("branch")
+}
+
+println "Current branch: ${getCurrentBranchName()}"
+
+repositories {
+	mavenCentral()
+//	maven {
+//		credentials {
+//			username 'devops.techperformance'
+//			password '1234qwerasdf'
+//		}
+//		url "https://artifactory.techandsolve.com/artifactory/techandsolve-repository"
+//	}
+	maven {
+		url 'https://pkgs.dev.azure.com/techandsolve/RUNFALCON/_packaging/Runfalcon_artifacts/maven/v1'
+		name 'Runfalcon_artifacts'
+		credentials {
+			username 'techandsolve'
+			password 'jpareplvbvdfmpoftoolfnbxw4g4ungfrv27dq7qhosa5bfdkqoa'
+		}
+	}
+}
+
+dependencies {
+	compile group: 'org.reflections', name: 'reflections', version: '0.9.12'
+	compile 'org.seleniumhq.selenium:selenium-java:4.0.0-beta-1'
+    compile("com.techandsolve.performanceaas:tpaas-utilities-${getCurrentBranchName()}:$version")
+    compile 'com.fasterxml.jackson.core:jackson-databind:2.11.3'
+	compile 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.11.3'
+	implementation "org.slf4j:slf4j-api:1.6.2"
+	implementation "org.slf4j:slf4j-simple:1.6.2"
+	testImplementation "org.junit.jupiter:junit-jupiter-api:5.6.2"
+	testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:5.6.2"
+
+
+}
+
+repositories {
+    mavenCentral()
+}
+
+test {
+	useJUnitPlatform()
+}
+
+jar{
+	archiveBaseName = projectName
+	archiveVersion = "$projectVersion-${getCurrentBranchName()}"
+}
+
+task writePom {
+	doLast {
+		pom {
+			project {
+				inceptionYear '2020'
+				version "$projectVersion-${getCurrentBranchName()}"
+				licenses {
+					license {
+						name 'The Apache Software License, Version 2.0'
+						url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+						distribution 'repo'
+					}
+				}
+			}
+		}.writeTo("$buildDir/$projectName-$projectVersion-${getCurrentBranchName()}.pom")
+	}
+}
+
+apply plugin: 'maven-publish'
+publishing {
+	publications {
+		myPublication(MavenPublication) {
+			groupId 'com.techandsolve.performanceaas'
+			artifactId "$projectName-${getCurrentBranchName()}"
+			artifact "$buildDir/libs/$projectName-$version-${getCurrentBranchName()}.jar"
+		}
+	}
+	repositories {
+		maven {
+			url 'https://pkgs.dev.azure.com/techandsolve/RUNFALCON/_packaging/Runfalcon_artifacts/maven/v1'
+			credentials {
+				username 'techandsolve'
+				password 'ldykldpvvemsrhqdo4a7ustovac4wpsgi5brpk4lvml3gqqjvmyq'
+			}
+		}
+	}
+}
